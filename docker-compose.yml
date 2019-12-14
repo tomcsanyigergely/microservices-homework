@@ -1,0 +1,9 @@
+version: "3"
+services:
+  inventorydb:
+    image: mysql:8.0.18
+    environment:
+      - MYSQL_ROOT_PASSWORD=microservices
+      - MYSQL_DATABASE=inventory
+    volumes:
+      - ./inventorydb:/docker-entrypoint-initdb.d
