@@ -1,20 +1,33 @@
 version: "3"
 services:
-  inventorydb:
-    image: mysql:8.0.18
+  #inventorydb:
+  #  image: mysql:8.0.18
+  #  environment:
+  #    - MYSQL_ROOT_PASSWORD=microservices
+  #    - MYSQL_DATABASE=inventory
+  #  volumes:
+  #    - ./inventorydb:/docker-entrypoint-initdb.d
+  #  ports:
+  #    - 3306:3306
+  #inventory:
+  #  build: inventory/
+  #  volumes:
+  #    - ./inventory:/app
+  #  command: [ "python", "/app/inventory.py" ]
+  #  ports:
+  #    - 8888:8888
+  #  depends_on:
+  #    - inventorydb
+  accountdb:
+    image: postgres:12.1
     environment:
-      - MYSQL_ROOT_PASSWORD=microservices
-      - MYSQL_DATABASE=inventory
+      - POSTGRES_PASSWORD=microservices
+      - POSTGRES_USER=user
+      - POSTGRES_DB=account
     volumes:
-      - ./inventorydb:/docker-entrypoint-initdb.d
+      - ./accountdb:/docker-entrypoint-initdb.d
     ports:
-      - 3306:3306
-  inventory:
-    build: inventory/
-    volumes:
-      - ./inventory:/app
-    command: [ "python", "/app/inventory.py" ]
-    ports:
-      - 8888:8888
-    depends_on:
-      - inventorydb
+      - 54321:5432
+  account:
+    image: maven:3.6.3-jdk-11-openj9
+    
