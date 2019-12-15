@@ -7,12 +7,10 @@ CREATE TABLE items (
   PRIMARY KEY (id)
 );
 
-CREATE TABLE itemchanges (
-  id INT,
-  item_id INT,
+CREATE TABLE changes (
+  id VARCHAR(50),
 
-  PRIMARY KEY (id),
-  FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+  PRIMARY KEY (id)
 );
 
 INSERT INTO items (name, price, quantity) VALUES ('Csoki', 3, 50), ('Alma', 4, 20), ('Sajt', 7, 11);

@@ -7,6 +7,8 @@ services:
       - MYSQL_DATABASE=inventory
     volumes:
       - ./inventorydb:/docker-entrypoint-initdb.d
+    ports:
+      - 3306:3306
   inventory:
     build: inventory/
     volumes:
