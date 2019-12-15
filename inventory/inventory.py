@@ -15,14 +15,8 @@ def not_processed(request_id, cursor):
     return count == 0
 
 def decrease_item_quantities(items, cursor):
-    list_of_ids = []
-    for item in items:
-      list_of_ids.append(item['id'])
-    placeholders = ', '.join(['%s'] * len(list_of_ids))
-    cursor.execute("SELECT quantity FROM items WHERE id IN (%s) FOR UPDATE" % placeholders, tuple(list_of_ids))
-    cursor.fetchall()
+    cursor.execute("LOCK TABLES items WRITE")
     time.sleep(5)
-
     for item in items:
       # lazy solution: executing SQL statements one by one in loop is not recommended:
       cursor.execute("SELECT quantity FROM items WHERE id = %s", (item['id'],))
@@ -31,6 +25,7 @@ def decrease_item_quantities(items, cursor):
         cursor.execute("UPDATE items SET quantity = quantity - %s WHERE id = %s", (item['quantity'], item['id'],))
       else:
         return False
+    cursor.execute("UNLOCK TABLES")
     return True
 
 @app.route("/items", methods=['GET'])
