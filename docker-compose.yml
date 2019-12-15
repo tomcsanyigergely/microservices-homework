@@ -7,3 +7,12 @@ services:
       - MYSQL_DATABASE=inventory
     volumes:
       - ./inventorydb:/docker-entrypoint-initdb.d
+  inventory:
+    build: inventory/
+    volumes:
+      - ./inventory:/app
+    command: [ "python", "/app/inventory.py" ]
+    ports:
+      - 8888:8888
+    depends_on:
+      - inventorydb
