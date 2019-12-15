@@ -28,6 +28,3 @@ services:
       - ./accountdb:/docker-entrypoint-initdb.d
     ports:
       - 54321:5432
-  account:
-    image: maven:3.6.3-jdk-11-openj9
-    
