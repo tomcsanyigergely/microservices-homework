@@ -6,10 +6,10 @@ CREATE TABLE users (
 );
 
 CREATE TABLE transactions (
-  id SERIAL PRIMARY KEY,
+  id VARCHAR(50) PRIMARY KEY,
   amount INT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   user_id INT REFERENCES users(id)
 );
 
-INSERT INTO users (username, password, balance) VALUES ('tagergo', 'password', 80), ('gergely', 'secretpass', 20);
+INSERT INTO users (id, username, password, balance) VALUES (1, 'tagergo', 'password', 80), (2, 'gergely', 'secretpass', 20);

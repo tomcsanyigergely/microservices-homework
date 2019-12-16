@@ -52,8 +52,14 @@ public class UsersController {
     @PostMapping
     @Transactional
     public ResponseEntity<Map<String, Object>> createUser(@RequestBody @Valid PostUsersRequest request) {
-        jdbcTemplate.update("INSERT INTO users (username, password, balance) VALUES (?, ?, ?)", request.getUsername(), request.getPassword(), 100);
         Map<String, Object> response = new HashMap<>();
+        try {
+            jdbcTemplate.update("INSERT INTO users (username, password, balance) VALUES (?, ?, ?)", request.getUsername(), request.getPassword(), 100);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("error", "Username already exists");
+            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+        }
         response.put("success", true);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
