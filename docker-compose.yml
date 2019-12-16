@@ -18,13 +18,39 @@ services:
   #    - 8888:8888
   #  depends_on:
   #    - inventorydb
-  accountdb:
+  #accountdb:
+  #  image: postgres:12.1
+  #  environment:
+  #    - POSTGRES_PASSWORD=microservices
+  #    - POSTGRES_USER=user
+  #    - POSTGRES_DB=account
+  #  volumes:
+  #    - ./accountdb:/docker-entrypoint-initdb.d
+  #  ports:
+  #    - 54321:5432
+  authdb:
     image: postgres:12.1
     environment:
       - POSTGRES_PASSWORD=microservices
       - POSTGRES_USER=user
-      - POSTGRES_DB=account
+      - POSTGRES_DB=credentials
     volumes:
-      - ./accountdb:/docker-entrypoint-initdb.d
+      - ./authdb:/docker-entrypoint-initdb.d
     ports:
       - 54321:5432
+
+  nginx:
+    image: nginx:1.17.6
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - authserver
+
+  authserver:
+    build: authserver/
+    ports:
+      - 8080:80
+    depends_on:
+      - authdb
