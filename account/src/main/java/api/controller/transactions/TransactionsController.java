@@ -29,9 +29,20 @@ public class TransactionsController {
 
     @GetMapping("/transactions")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, Object> getTransactions() {
+    public Map<String, Object> getAllTransactions() {
         List<Map<String, Object>> transactions = jdbcTemplate.queryForList("SELECT * FROM transactions");
         return new SuccessResponse().put("transactions", transactions).build();
+    }
+
+    @GetMapping("/transactions/{transactionId}")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, Object> getTransaction(@PathVariable String transactionId) throws NotFoundException {
+        List<Map<String, Object>> transactions = jdbcTemplate.queryForList("SELECT * FROM transactions WHERE id = ?", transactionId);
+        if (transactions.size() == 1) {
+            return new SuccessResponse().put("transaction", transactions.get(0)).build();
+        } else {
+            throw new NotFoundException();
+        }
     }
 
     @Transactional
