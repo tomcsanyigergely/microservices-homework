@@ -10,7 +10,7 @@ app.listen(80, () => {
  console.log("Server started listening on port 80");
 });
 
-app.post("/orders", (request, response) => {
+app.put("/orders/:id", (request, response) => {
   if (!(typeof request.body !== 'undefined' && request.body !== null)) {
     if (!(typeof request.body !== 'undefined')) {
       console.log('undefined');
@@ -22,11 +22,10 @@ app.post("/orders", (request, response) => {
 
     return;
   }
+  var request_id = request.params.id;
   var username = request.header('X-USERNAME');
-  var request_id = request.body.request_id;
   var items = request.body.items;
   if (!(typeof username !== 'undefined' && username !== null &&
-      typeof request_id !== 'undefined' && request_id !== null &&
       typeof items !== 'undefined' && items !== null)) {
         console.log('There is an errror');
     response.status(400).send({success: false, error: 'Bad request'});
