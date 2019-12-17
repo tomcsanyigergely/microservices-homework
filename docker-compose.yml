@@ -1,23 +1,25 @@
 version: "3"
 services:
-  #inventorydb:
-  #  image: mysql:8.0.18
-  #  environment:
-  #    - MYSQL_ROOT_PASSWORD=microservices
-  #    - MYSQL_DATABASE=inventory
-  #  volumes:
-  #    - ./inventorydb:/docker-entrypoint-initdb.d
-  #  ports:
-  #    - 3306:3306
-  #inventory:
-  #  build: inventory/
-  #  volumes:
-  #    - ./inventory:/app
-  #  command: [ "python", "/app/inventory.py" ]
-  #  ports:
-  #    - 8888:8888
-  #  depends_on:
-  #    - inventorydb
+
+  inventorydb:
+    image: mysql:8.0.18
+    environment:
+      - MYSQL_ROOT_PASSWORD=microservices
+      - MYSQL_DATABASE=inventory
+    volumes:
+      - ./inventorydb:/docker-entrypoint-initdb.d
+    ports:
+      - 3306:3306
+
+  inventory:
+    build: inventory/
+    volumes:
+      - ./inventory:/app
+    command: [ "python", "/app/inventory.py" ]
+    ports:
+      - 8888:80
+    depends_on:
+      - inventorydb
 
   accountdb:
     image: postgres:12.1
@@ -30,6 +32,14 @@ services:
     ports:
       - 54322:5432
 
+  order:
+    build: order/
+    volumes:
+      - ./order:/app
+    command: [ "node", "/app/app.js" ]
+    ports:
+      - 9000:80
+
   authdb:
     image: postgres:12.1
     environment:
@@ -41,18 +51,18 @@ services:
     ports:
       - 54321:5432
 
-  nginx:
-    image: nginx:1.17.6
-    ports:
-      - 80:80
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - authserver
-
   authserver:
     build: authserver/
     ports:
       - 8080:80
     depends_on:
       - authdb
+
+  gateway:
+    image: nginx:1.17.6
+    ports:
+      - 80:80
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - authserver
