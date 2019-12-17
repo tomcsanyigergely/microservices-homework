@@ -32,6 +32,15 @@ services:
     ports:
       - 54322:5432
 
+  orderdb:
+    image: mongo:4.2.2-bionic
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=user
+      - MONGO_INITDB_ROOT_PASSWORD=microservices
+      - MONGO_INITDB_DATABASE=order
+    volumes:
+      - ./orderdb:/docker-entrypoint-initdb.d
+
   order:
     build: order/
     volumes:
@@ -39,6 +48,8 @@ services:
     command: [ "node", "/app/app.js" ]
     ports:
       - 9000:80
+    depends_on:
+      - orderdb
 
   authdb:
     image: postgres:12.1
@@ -66,3 +77,5 @@ services:
       - ./gateway/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - authserver
+      - order
+      - inventory
