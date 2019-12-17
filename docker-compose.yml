@@ -8,16 +8,12 @@ services:
       - MYSQL_DATABASE=inventory
     volumes:
       - ./inventorydb:/docker-entrypoint-initdb.d
-    ports:
-      - 3306:3306
 
   inventory:
     build: inventory/
     volumes:
       - ./inventory:/app
     command: [ "python", "/app/inventory.py" ]
-    ports:
-      - 8888:80
     depends_on:
       - inventorydb
 
@@ -29,8 +25,11 @@ services:
       - POSTGRES_DB=account
     volumes:
       - ./accountdb:/docker-entrypoint-initdb.d
-    ports:
-      - 54322:5432
+
+  account:
+    build: account/
+    depends_on:
+      - accountdb
 
   orderdb:
     image: mongo:4.2.2-bionic
@@ -46,10 +45,10 @@ services:
     volumes:
       - ./order:/app
     command: [ "node", "/app/app.js" ]
-    ports:
-      - 9000:80
     depends_on:
       - orderdb
+      - inventory
+      - account
 
   authdb:
     image: postgres:12.1
@@ -59,13 +58,9 @@ services:
       - POSTGRES_DB=credentials
     volumes:
       - ./authdb:/docker-entrypoint-initdb.d
-    ports:
-      - 54321:5432
 
   authserver:
     build: authserver/
-    ports:
-      - 8080:80
     depends_on:
       - authdb
 
@@ -79,3 +74,4 @@ services:
       - authserver
       - order
       - inventory
+      - account
