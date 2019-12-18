@@ -66,7 +66,7 @@ def put_forecast(id):
             payload = {'latitude': body['latitude'], 'longitude': body['longitude'], 'days': body['days']}
             forecast_response = requests.get("http://forecast:80/weather", json=payload)
             if forecast_response.status_code == 200:
-              content = forecast_response.content
+              content = forecast_response.json()
               insert_forecast_sql = ("INSERT INTO forecasts (id, username, latitude, longitude, temperature, date) VALUES (%s, %s, %s, %s, %s, DATE_ADD(NOW(), INTERVAL %s DAY))")
               cursor.execute(insert_forecast_sql, (id, username, body['latitude'], body['longitude'], content['temperature'], body['days']))
               response = {'success': True}
@@ -75,7 +75,7 @@ def put_forecast(id):
               response = {'success': True}
               status = 202
           elif account_response.status_code == 409:
-            response = account_response.content
+            response = account_response.json()
             status = 409
           else:
             response = {'success': False, 'error': 'Service unavailable'}
