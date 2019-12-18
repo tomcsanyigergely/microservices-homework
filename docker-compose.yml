@@ -58,6 +58,23 @@ services:
       - ./forecast:/app
     command: [ "node", "/app/app.js" ]
 
+  weatherdb:
+    image: mysql:8.0.18
+    environment:
+      - MYSQL_ROOT_PASSWORD=microservices
+      - MYSQL_DATABASE=weather
+    volumes:
+      - ./weatherdb:/docker-entrypoint-initdb.d
+
+  weather:
+    build:
+    volumes:
+      - ./weather:/app
+    command: [ "python", "/app/weather.py" ]
+    depends_on:
+      - weatherdb
+      - forecast
+
   authdb:
     image: postgres:12.1
     environment:
