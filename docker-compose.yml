@@ -67,7 +67,7 @@ services:
       - ./weatherdb:/docker-entrypoint-initdb.d
 
   weather:
-    build:
+    build: weather/
     volumes:
       - ./weather:/app
     command: [ "python", "/app/weather.py" ]
