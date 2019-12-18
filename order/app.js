@@ -13,6 +13,7 @@ app.listen(80, () => {
 });
 
 app.put("/orders/:id", (request, response) => {
+  console.log("PUT /orders/" + request.params.id)
   if (!(typeof request.body !== 'undefined' && request.body !== null)) {
     response.status(400).send({success: false, error: 'Bad request'});
     return;
@@ -165,6 +166,7 @@ app.put("/orders/:id", (request, response) => {
 });
 
 app.get("/orders", (request, response) => {
+  console.log("GET /orders")
   MongoClient.connect(url, (err, connection) => {
     if (err) {
       response.status(503).send({success: false, error: 'Service unavailable'});
