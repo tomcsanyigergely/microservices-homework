@@ -49,16 +49,14 @@ public class TransactionsController {
     @PutMapping("/transactions/{transactionId}")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Object> createTransaction(@PathVariable String transactionId, @RequestHeader("X-USERNAME") String username, @RequestBody int amount) throws NotEnoughBalanceException, UserHasNoAccountException, AlreadyProcessedException {
-        try {
-            jdbcTemplate.update("INSERT INTO transactions (id, amount, username) VALUES (?, ?, ?)", transactionId, amount, username);
-        } catch (Exception e) {
-            throw new AlreadyProcessedException();
-        }
-
         jdbcTemplate.update("LOCK TABLE accounts IN ACCESS EXCLUSIVE MODE");
         List<Map<String, Object>> records = jdbcTemplate.queryForList("SELECT balance FROM accounts WHERE username = ?", username);
-
         if (records.size() == 1) {
+            try {
+                jdbcTemplate.update("INSERT INTO transactions (id, amount, username) VALUES (?, ?, ?)", transactionId, amount, username);
+            } catch (Exception e) {
+                throw new AlreadyProcessedException();
+            }
             int currentBalance = (int)records.get(0).get("balance");
             if (currentBalance >= amount) {
                 jdbcTemplate.update("UPDATE accounts SET balance = balance - ? WHERE username = ?", amount, username);
