@@ -11,7 +11,6 @@ def create_connection():
     return connection
 
 def decrease_item_quantities(items, cursor):
-    cursor.execute("LOCK TABLES items WRITE")
     price = 0
     for item in items:
       # lazy solution: executing SQL statements one by one in a loop is not recommended:
@@ -22,7 +21,6 @@ def decrease_item_quantities(items, cursor):
         price += item['quantity']*item_price
       else:
         return False, 0
-    cursor.execute("UNLOCK TABLES")
     return True, price
 
 @app.route("/items", methods=['GET'])
@@ -98,6 +96,7 @@ def create_change(request_id):
         connection = create_connection()
         cursor = connection.cursor()
         try:
+          cursor.execute("LOCK TABLES changes WRITE, items WRITE")
           insert_change_sql = ("INSERT INTO changes (id, items) VALUES (%s, %s)")
           cursor.execute(insert_change_sql, (request_id, json.dumps(body['items']),))
 
@@ -107,6 +106,7 @@ def create_change(request_id):
             cursor.execute(save_price_sql, (price, request_id,))
 
             connection.commit()
+            cursor.execute("UNLOCK TABLES")
 
             response = {'success': True, 'price': price}
             status = 201
