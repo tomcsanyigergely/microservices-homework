@@ -27,7 +27,6 @@ def decrease_item_quantities(items, cursor):
 
 @app.route("/items", methods=['GET'])
 def get_all_items():
-    print('GET /items')
     connection = create_connection()
     cursor = connection.cursor(dictionary=True)
     cursor.execute("SELECT id, name, price, quantity FROM items")
@@ -40,7 +39,6 @@ def get_all_items():
 
 @app.route("/items/<int:id>", methods=['GET'])
 def get_item(id):
-    print('GET /items/' + id)
     connection = create_connection()
     cursor = connection.cursor(dictionary=True)
     cursor.execute("SELECT id, name, price, quantity FROM items WHERE id = %s", (id,))
@@ -54,7 +52,6 @@ def get_item(id):
 
 @app.route("/items", methods=['POST'])
 def create_item():
-    print('POST /items')
     if request.is_json:
       body = request.get_json()
       if body['name'] and body['price'] and body['quantity']:
@@ -79,7 +76,6 @@ def create_item():
 
 @app.route("/changes", methods=['GET'])
 def list_changes():
-    print('GET /changes')
     connection = create_connection()
     cursor = connection.cursor(dictionary=True)
     cursor.execute("SELECT id, price, items FROM changes")
@@ -92,7 +88,6 @@ def list_changes():
 
 @app.route("/changes/<request_id>", methods=['PUT'])
 def create_change(request_id):
-    print('PUT /changes/' + request_id)
     if request.is_json:
       body = request.get_json()
       valid_body = True
@@ -136,7 +131,6 @@ def create_change(request_id):
 
 @app.route("/changes/<request_id>", methods=['DELETE'])
 def delete_change(request_id):
-    print('DELETE /changes/' + request_id)
     connection = create_connection()
     cursor = connection.cursor(dictionary=True)
     cursor.execute("LOCK TABLES changes WRITE, items WRITE")
