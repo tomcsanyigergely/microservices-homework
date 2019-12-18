@@ -88,7 +88,7 @@ app.put("/orders/:id", (request, response) => {
                 console.log('ACCOUNT SERVICE: ' + res.statusCode);
                 console.log(body);
                 if (res && res.statusCode == 403 || res.statusCode == 201) {
-                  dbo.collection('orders').updateOne(query, { $set: { state: 'completed' } }, function(err, res) {
+                  dbo.collection('orders').updateOne(query, { $set: { state: 'completed', timestamp: { type: Date, default: Date.now} } }, function(err, res) {
                     if (err) {
                       console.log(err);
                       connection.close();
@@ -145,7 +145,7 @@ app.put("/orders/:id", (request, response) => {
       };
 
       if (res.length == 0) {
-        var order = { request_id: request_id, state: 'pending', username: username, items: items };
+        var order = { request_id: request_id, state: 'pending', username: username, items: items, timestamp: { type: Date, default: Date.now} };
         dbo.collection('orders').insertOne(order, function(err, res) {
           if (err) {
             console.log(err);

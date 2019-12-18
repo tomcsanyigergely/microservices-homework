@@ -15,10 +15,15 @@ def decrease_item_quantities(items, cursor):
     for item in items:
       # lazy solution: executing SQL statements one by one in a loop is not recommended:
       cursor.execute("SELECT quantity, price FROM items WHERE id = %s", (item['id'],))
-      (current_quantity, item_price) = cursor.fetchone()
-      if current_quantity >= item['quantity']:
-        cursor.execute("UPDATE items SET quantity = quantity - %s WHERE id = %s", (item['quantity'], item['id'],))
-        price += item['quantity']*item_price
+      row = cursor.fetchone()
+      if row is not None:
+        current_quantity = row[0]
+        item_price = row[1]
+        if current_quantity >= item['quantity']:
+          cursor.execute("UPDATE items SET quantity = quantity - %s WHERE id = %s", (item['quantity'], item['id'],))
+          price += item['quantity']*item_price
+        else:
+          return False, 0
       else:
         return False, 0
     return True, price
@@ -44,7 +49,7 @@ def get_item(id):
     cursor.close()
     connection.close()
     if row is not None:
-      return jsonify({'success': True, 'item': {'id': row['id'], 'name': row['name'], 'price': row['price'], 'quantity': row['quantity']}})
+      return jsonify({'success': True, 'item': {'id': row['id'], 'name':  row['name'], 'price':  row['price'], 'quantity':  row['quantity']}})
     else:
       return jsonify({'success': False, 'error': 'Not found'}), 404
 

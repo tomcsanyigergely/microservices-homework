@@ -16,8 +16,6 @@ services:
     command: [ "python", "/app/inventory.py" ]
     depends_on:
       - inventorydb
-    ports:
-      - 8080:80
 
   accountdb:
     image: postgres:12.1
