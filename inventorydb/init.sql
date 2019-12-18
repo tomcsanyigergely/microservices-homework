@@ -9,6 +9,7 @@ CREATE TABLE items (
 
 CREATE TABLE changes (
   id VARCHAR(50),
+  price INT,
 
   PRIMARY KEY (id)
 );

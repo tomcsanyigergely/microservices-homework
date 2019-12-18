@@ -16,17 +16,18 @@ def not_processed(request_id, cursor):
 
 def decrease_item_quantities(items, cursor):
     cursor.execute("LOCK TABLES items WRITE")
-    time.sleep(5)
+    price = 0
     for item in items:
-      # lazy solution: executing SQL statements one by one in loop is not recommended:
-      cursor.execute("SELECT quantity FROM items WHERE id = %s", (item['id'],))
-      (current_quantity,) = cursor.fetchone()
+      # lazy solution: executing SQL statements one by one in a loop is not recommended:
+      cursor.execute("SELECT quantity, price FROM items WHERE id = %s", (item['id'],))
+      (current_quantity, item_price) = cursor.fetchone()
       if current_quantity >= item['quantity']:
         cursor.execute("UPDATE items SET quantity = quantity - %s WHERE id = %s", (item['quantity'], item['id'],))
+        price += item['quantity']*item_price
       else:
-        return False
+        return False, 0
     cursor.execute("UNLOCK TABLES")
-    return True
+    return True, price
 
 @app.route("/items", methods=['GET'])
 def get_all_items():
@@ -57,28 +58,16 @@ def get_item(id):
 def create_item():
     if request.is_json:
       body = request.get_json()
-      if body['request_id'] and body['name'] and body['price'] and body['quantity']:
+      if body['name'] and body['price'] and body['quantity']:
         connection = create_connection()
         cursor = connection.cursor()
-        if not_processed(body['request_id'], cursor):
-          time.sleep(5)
-          try:
-            insert_change_sql = ("INSERT INTO changes (id) VALUES (%s)")
-            cursor.execute(insert_change_sql, (body['request_id'],))
 
-            insert_item_sql = ("INSERT INTO items (name, price, quantity) VALUES (%s, %s, %s)")
-            cursor.execute(insert_item_sql, (body['name'], body['price'], body['quantity'],))
+        insert_item_sql = ("INSERT INTO items (name, price, quantity) VALUES (%s, %s, %s)")
+        cursor.execute(insert_item_sql, (body['name'], body['price'], body['quantity'],))
 
-            connection.commit()
-
-            response = {'success': True}
-            status = 200
-          except mysql.connector.IntegrityError:
-            response = {'success': False, 'error': 'Already processed'}
-            status = 409
-        else:
-          response = {'success': False, 'error': 'Already processed'}
-          status = 409
+        connection.commit()
+        response = {'success': True}
+        status = 200
         cursor.close()
         connection.close()
       else:
@@ -89,31 +78,30 @@ def create_item():
       status = 400
     return jsonify(response), status
 
-@app.route("/changes", methods=['POST'])
-def consume_quantity():
+@app.route("/changes/<request_id>", methods=['PUT'])
+def consume_items(request_id):
     if request.is_json:
       body = request.get_json()
       valid_body = True
-      if body['request_id']:
-        for item in body['items']:
-          if not (item['id'] and item['quantity']):
-            valid_body = False
-      else:
-        valid_body = False
+      for item in body['items']:
+        if not (item['id'] and item['quantity']):
+          valid_body = False
       if valid_body:
         connection = create_connection()
         cursor = connection.cursor()
-        if not_processed(body['request_id'], cursor):
-          time.sleep(3)
+        if not_processed(request_id, cursor):
           try:
             insert_change_sql = ("INSERT INTO changes (id) VALUES (%s)")
-            cursor.execute(insert_change_sql, (body['request_id'],))
+            cursor.execute(insert_change_sql, (request_id,))
 
-            decreased = decrease_item_quantities(body['items'], cursor)
+            decreased, price = decrease_item_quantities(body['items'], cursor)
             if decreased:
+              save_price_sql = ("UPDATE changes SET price = (%s) WHERE id = (%s)")
+              cursor.execute(save_price_sql, (price, request_id,))
+
               connection.commit()
 
-              response = {'success': True}
+              response = {'success': True, 'price': price}
               status = 200
             else:
               response = {'success': False, 'error': 'Not enough items'}

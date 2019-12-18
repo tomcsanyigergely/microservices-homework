@@ -1,6 +1,8 @@
 var express = require('express');
+const request = require('request');
 var MongoClient = require('mongodb').MongoClient;
 var url = "mongodb://user:microservices@orderdb:27017/";
+
 
 var app = express();
 bodyParser = require('body-parser');
@@ -12,22 +14,14 @@ app.listen(80, () => {
 
 app.put("/orders/:id", (request, response) => {
   if (!(typeof request.body !== 'undefined' && request.body !== null)) {
-    if (!(typeof request.body !== 'undefined')) {
-      console.log('undefined');
-    }
-    if (!(request.body !== null)) {
-      console.log('null');
-    }
     response.status(400).send({success: false, error: 'Bad request'});
-
     return;
   }
   var request_id = request.params.id;
   var username = request.header('X-USERNAME');
   var items = request.body.items;
   if (!(typeof username !== 'undefined' && username !== null &&
-      typeof items !== 'undefined' && items !== null)) {
-        console.log('There is an errror');
+        typeof items !== 'undefined' && items !== null)) {
     response.status(400).send({success: false, error: 'Bad request'});
     return;
   }
@@ -39,16 +33,43 @@ app.put("/orders/:id", (request, response) => {
     }
 
     var dbo = db.db('order');
-    var myobj = { request_id: request_id, username: username, items: items };
-    dbo.collection('orders').insertOne(myobj, function(err, res) {
+    var query = { request_id: request_id }
+    var projection = { _id: 0, state: 1 }
+    dbo.collection('orders').find(query, {projection: projection}).toArray(function(err, res) {
       if (err) {
-        response.status(409).send({success: false, error: 'Already processed'});
+        response.status(503).send({success: false, error: 'Service unavailable'});
         db.close();
         return;
       }
-      console.log("1 document inserted");
-      response.send({success: true});
-      db.close();
+
+      var make_order = function() {
+        request.put({
+          headers: {'Content-Type' : 'application/json'},
+          url: 'http://inventory:80/' + request_id,
+          body: items}, function(error, response, body){
+            console.log(body);
+          });
+      };
+
+      if (res.length == 0) {
+        var order = { request_id: request_id, state: 'started', username: username, items: items };
+        dbo.collection('orders').insertOne(order, function(err, res) {
+          if (err) {
+            response.status(503).send({success: false, error: 'Service unavailable'});
+            db.close();
+            return;
+          }
+          make_order();
+        });
+      } else {
+        if (res[0].state == 'completed') {
+          response.status(200).send({success: true, error: 'Already completed'});
+          db.close();
+          return;
+        } else {
+          make_order();
+        }
+      }
     });
   });
 });
