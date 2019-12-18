@@ -47,6 +47,8 @@ services:
     volumes:
       - ./order:/app
     command: [ "node", "/app/app.js" ]
+    environment:
+      - WAITING_TIME=5
     depends_on:
       - orderdb
       - inventory

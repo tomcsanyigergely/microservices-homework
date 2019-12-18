@@ -1,8 +1,9 @@
 var express = require('express');
 const request_sender = require('request');
+const waitSync = require('wait-sync');
 var MongoClient = require('mongodb').MongoClient;
 var url = "mongodb://user:microservices@orderdb:27017/";
-
+const WAITING_TIME = Number(process.env.WAITING_TIME || '0')
 
 var app = express();
 bodyParser = require('body-parser');
@@ -47,6 +48,7 @@ app.put("/orders/:id", (request, response) => {
       }
 
       var make_order = function() {
+        waitSync(WAITING_TIME);
         request_sender.put({
           url: 'http://inventory:80/changes/' + request_id,
           json: true,
@@ -70,6 +72,7 @@ app.put("/orders/:id", (request, response) => {
                 response.status(503).send({success: false, error: 'Service unavailable'});
                 return;
               }
+              waitSync(WAITING_TIME);
               request_sender.put({
                 url: 'http://account:80/transactions/' + request_id,
                 headers: {'X-USERNAME': username},
@@ -102,7 +105,7 @@ app.put("/orders/:id", (request, response) => {
                   if (res && res.statusCode == 409) {
                     response.status(409).send({success: false, error: body.error});
                   }
-
+                  waitSync(WAITING_TIME);
                   request_sender.delete({
                     url: 'http://inventory:80/changes/' + request_id
                   }, function(err, res, body) {
