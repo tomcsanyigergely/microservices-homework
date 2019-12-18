@@ -38,7 +38,7 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler(AlreadyProcessedException.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
     public Map<String, Object> alreadyProcessedExceptionHandler() {
         return createErrorResponse("Already processed");
     }

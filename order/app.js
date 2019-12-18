@@ -29,6 +29,7 @@ app.put("/orders/:id", (request, response) => {
 
   MongoClient.connect(url, (err, db) => {
     if (err) {
+      console.log(err);
       response.status(503).send({success: false, error: 'Service unavailable'});
       return;
     }
@@ -38,6 +39,7 @@ app.put("/orders/:id", (request, response) => {
     var projection = { _id: 0, state: 1 }
     dbo.collection('orders').find(query, {projection: projection}).toArray(function(err, res) {
       if (err) {
+        console.log(err);
         response.status(503).send({success: false, error: 'Service unavailable'});
         db.close();
         return;
@@ -53,9 +55,9 @@ app.put("/orders/:id", (request, response) => {
         }, function(err, res, body) {
           console.log(body);
           if (res && (res.statusCode == 200 || res.statusCode == 201)) {
-            // van elég tárgy
             dbo.collection('orders').updateOne(query, { $set: { price: body.price } }, function(err, res) {
               if (err) {
+                console.log(err);
                 db.close();
                 response.status(503).send({success: false, error: 'Service unavailable'});
                 return;
@@ -68,25 +70,61 @@ app.put("/orders/:id", (request, response) => {
               }, function(err, res, body) {
                 console.log(body);
                 if (err) {
-                  //// TODO:
+                  console.log(err);
+                  db.close();
+                  response.status(503).send({success: false, error: 'Service unavailable'});
                   return;
                 }
-                if (res && res.statusCode == 200 || res.statusCode == 201) {
+                if (res && res.statusCode == 403 || res.statusCode == 201) {
                   dbo.collection('orders').updateOne(query, { $set: { state: 'completed' } }, function(err, res) {
                     if (err) {
-                      //todo
+                      console.log(err);
+                      db.close();
+                      response.status(503).send({success: false, error: 'Service unavailable'});
                       return;
                     }
-                    //SUCCESS!
-                    response.status(200).send({success: true});
+
+                    //SUCCESSFUL TRANSACTION!!!
+                    response.status(201).send({success: true});
+                    db.close();
                   });
                 } else {
-                  // nincs elég pénz
+                  //NOT ENOUGH MONEY ON ACCOUNT OR ACCOUNT SERVICE UNAVAILABLE
+                  if (res && res.statusCode == 409) {
+                    response.status(409).send({success: false, error: body.error});
+                  }
+
+                  request_sender.delete({
+                    url: 'http://inventory:80/changes/' + request_id
+                  }, function(err, res, body) {
+                    if (err) {
+                      console.log(err);
+                    }
+                  });
+
+                  dbo.collection('orders').deleteOne(query, function(err, db) {
+                    if (err) {
+                      console.log(err);
+                    }
+                    db.close();
+                  });
                 }
               });
             });
           } else {
-            // nincs elég tárgy
+            // NOT ENOUGH ITEMS OR INVENTORY SERVICE UNAVAILABLE
+            if (res && res.statusCode == 409) {
+              response.status(409).send({success: false, error: body.error});
+            } else {
+              response.status(503).send({success: false, error: 'Service unavailable'});
+            }
+
+            dbo.collection('orders').deleteOne(query, function(err, db) {
+              if (err) {
+                console.log(err);
+              }
+              db.close();
+            });
           }
         });
       };
@@ -95,6 +133,7 @@ app.put("/orders/:id", (request, response) => {
         var order = { request_id: request_id, state: 'pending', username: username, items: items };
         dbo.collection('orders').insertOne(order, function(err, res) {
           if (err) {
+            console.log(err);
             response.status(503).send({success: false, error: 'Service unavailable'});
             db.close();
             return;
@@ -103,7 +142,7 @@ app.put("/orders/:id", (request, response) => {
         });
       } else {
         if (res[0].state == 'completed') {
-          response.status(200).send({success: true, error: 'Already completed'});
+          response.status(403).send({success: false, error: 'Already processed'});
           db.close();
           return;
         } else {

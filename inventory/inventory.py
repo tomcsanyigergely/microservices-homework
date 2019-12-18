@@ -9,11 +9,6 @@ def create_connection():
     connection.autocommit = False
     return connection
 
-def not_processed(request_id, cursor):
-    cursor.execute("SELECT COUNT(*) FROM changes WHERE id = %s", (request_id,))
-    (count,) = cursor.fetchone()
-    return count == 0
-
 def decrease_item_quantities(items, cursor):
     cursor.execute("LOCK TABLES items WRITE")
     price = 0
@@ -89,29 +84,28 @@ def consume_items(request_id):
       if valid_body:
         connection = create_connection()
         cursor = connection.cursor()
-        if not_processed(request_id, cursor):
-          try:
-            insert_change_sql = ("INSERT INTO changes (id) VALUES (%s)")
-            cursor.execute(insert_change_sql, (request_id,))
+        try:
+          insert_change_sql = ("INSERT INTO changes (id) VALUES (%s)")
+          cursor.execute(insert_change_sql, (request_id,))
 
-            decreased, price = decrease_item_quantities(body['items'], cursor)
-            if decreased:
-              save_price_sql = ("UPDATE changes SET price = (%s) WHERE id = (%s)")
-              cursor.execute(save_price_sql, (price, request_id,))
+          decreased, price = decrease_item_quantities(body['items'], cursor)
+          if decreased:
+            save_price_sql = ("UPDATE changes SET price = (%s) WHERE id = (%s)")
+            cursor.execute(save_price_sql, (price, request_id,))
 
-              connection.commit()
+            connection.commit()
 
-              response = {'success': True, 'price': price}
-              status = 200
-            else:
-              response = {'success': False, 'error': 'Not enough items'}
-              status = 409
-          except mysql.connector.IntegrityError:
-            response = {'success': False, 'error': 'Already processed'}
+            response = {'success': True, 'price': price}
+            status = 201
+          else:
+            response = {'success': False, 'error': 'Not enough items'}
             status = 409
-        else:
-          response = {'success': False, 'error': 'Already processed'}
-          status = 409
+        except mysql.connector.IntegrityError:
+          query_price_sql = ("SELECT price FROM changes WHERE id = (%s)")
+          cursor.execute(query_price_sql, (request_id,))
+          price = cursor.fetchone()
+          response = {'success': False, 'error': 'Already processed', 'price': price}
+          status = 403
         cursor.close()
         connection.close()
       else:
