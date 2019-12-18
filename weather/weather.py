@@ -69,6 +69,7 @@ def put_forecast(id):
               content = forecast_response.json()
               insert_forecast_sql = ("INSERT INTO forecasts (id, username, latitude, longitude, temperature, date) VALUES (%s, %s, %s, %s, %s, DATE_ADD(NOW(), INTERVAL %s DAY))")
               cursor.execute(insert_forecast_sql, (id, username, body['latitude'], body['longitude'], content['temperature'], body['days']))
+              connection.commit()
               response = {'success': True}
               status = 201
             else:
