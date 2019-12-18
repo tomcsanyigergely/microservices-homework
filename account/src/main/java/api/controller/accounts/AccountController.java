@@ -31,6 +31,7 @@ public class AccountController {
     @GetMapping("/accounts")
     @ResponseStatus(HttpStatus.OK)
     public Map<String, Object> getAllAccounts() {
+        log.info("GET /accounts");
         List<Map<String, Object>> accounts = jdbcTemplate.queryForList("SELECT * FROM accounts");
         return new SuccessResponse().put("accounts", accounts).build();
     }
@@ -38,6 +39,7 @@ public class AccountController {
     @GetMapping("/accounts/{username}")
     @ResponseStatus(HttpStatus.OK)
     public Map<String, Object> getAccount(@PathVariable String username) throws NotFoundException {
+        log.info("GET /accounts/" + username);
         List<Map<String, Object>> accounts = jdbcTemplate.queryForList("SELECT * FROM accounts WHERE username = ?", username);
         if (accounts.size() == 1) {
             return new SuccessResponse().put("account", accounts.get(0)).build();
@@ -49,6 +51,7 @@ public class AccountController {
     @PostMapping("/accounts")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Object> createAccount(@RequestHeader("X-USERNAME") String username) throws AccountAlreadyCreatedException {
+        log.info("POST /accounts");
         try {
             jdbcTemplate.update("INSERT INTO accounts (username, balance) VALUES (?, ?)", username, 100);
             return new SuccessResponse().build();
