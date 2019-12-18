@@ -10,6 +10,7 @@ CREATE TABLE items (
 CREATE TABLE changes (
   id VARCHAR(50),
   price INT,
+  items json DEFAULT NULL,
 
   PRIMARY KEY (id)
 );

@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 import mysql.connector
 import time
+import json
 
 app = Flask(__name__)
 
@@ -73,8 +74,20 @@ def create_item():
       status = 400
     return jsonify(response), status
 
+@app.route("/changes", methods=['GET'])
+def list_changes():
+    connection = create_connection()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT id, price, items FROM changes")
+    output = []
+    for row in cursor:
+      output.append({'id': row['id'], 'price': row['price'], 'items': json.loads(row['items'])})
+    cursor.close()
+    connection.close()
+    return jsonify({'success': True, 'changes': output})
+
 @app.route("/changes/<request_id>", methods=['PUT'])
-def consume_items(request_id):
+def create_change(request_id):
     if request.is_json:
       body = request.get_json()
       valid_body = True
@@ -85,8 +98,8 @@ def consume_items(request_id):
         connection = create_connection()
         cursor = connection.cursor()
         try:
-          insert_change_sql = ("INSERT INTO changes (id) VALUES (%s)")
-          cursor.execute(insert_change_sql, (request_id,))
+          insert_change_sql = ("INSERT INTO changes (id, items) VALUES (%s, %s)")
+          cursor.execute(insert_change_sql, (request_id, json.dumps(body['items']),))
 
           decreased, price = decrease_item_quantities(body['items'], cursor)
           if decreased:
@@ -103,7 +116,7 @@ def consume_items(request_id):
         except mysql.connector.IntegrityError:
           query_price_sql = ("SELECT price FROM changes WHERE id = (%s)")
           cursor.execute(query_price_sql, (request_id,))
-          price = cursor.fetchone()
+          (price,) = cursor.fetchone()
           response = {'success': False, 'error': 'Already processed', 'price': price}
           status = 403
         cursor.close()
@@ -115,6 +128,24 @@ def consume_items(request_id):
       response = {'success': False, 'error': 'Missing JSON body'}
       status = 400
     return jsonify(response), status
+
+@app.route("/changes/<request_id>", methods=['DELETE'])
+def delete_change(request_id):
+    connection = create_connection()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("LOCK TABLES changes WRITE, items WRITE")
+    cursor.execute("SELECT id, price, items FROM changes WHERE id = %s", (request_id,))
+    row = cursor.fetchone()
+    if row is not None:
+      items = json.loads(row['items'])
+      for item in items:
+        cursor.execute("UPDATE items SET quantity = quantity + (%s) WHERE id = (%s)", (item['quantity'], item['id'],))
+      cursor.execute("DELETE FROM changes WHERE id = (%s)", (request_id,))
+    cursor.execute("UNLOCK TABLES")
+    connection.commit()
+    cursor.close()
+    connection.close()
+    return jsonify({'success': True}), 204
 
 
 if __name__ == '__main__':

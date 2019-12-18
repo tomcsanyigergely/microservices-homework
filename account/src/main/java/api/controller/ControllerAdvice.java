@@ -69,7 +69,7 @@ public class ControllerAdvice {
 
     private static Map<String, Object> createErrorResponse(String errorMessage) {
         Map<String, Object> response = new HashMap<>();
-        response.put("succecss", false);
+        response.put("success", false);
         response.put("error", errorMessage);
         return response;
     }

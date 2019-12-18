@@ -27,21 +27,21 @@ app.put("/orders/:id", (request, response) => {
     return;
   }
 
-  MongoClient.connect(url, (err, db) => {
+  MongoClient.connect(url, (err, connection) => {
     if (err) {
       console.log(err);
       response.status(503).send({success: false, error: 'Service unavailable'});
       return;
     }
 
-    var dbo = db.db('order');
+    var dbo = connection.db('order');
     var query = { request_id: request_id }
     var projection = { _id: 0, state: 1 }
     dbo.collection('orders').find(query, {projection: projection}).toArray(function(err, res) {
       if (err) {
         console.log(err);
         response.status(503).send({success: false, error: 'Service unavailable'});
-        db.close();
+        connection.close();
         return;
       }
 
@@ -53,12 +53,19 @@ app.put("/orders/:id", (request, response) => {
             items: items
           }
         }, function(err, res, body) {
+          if (err) {
+            console.log(err);
+            connection.close();
+            response.status(503).send({success: false, error: 'Service unavailable'});
+            return;
+          }
+          console.log('INVENTORY SERVICE: ' + res.statusCode);
           console.log(body);
-          if (res && (res.statusCode == 200 || res.statusCode == 201)) {
+          if (res && (res.statusCode == 201 || res.statusCode == 403)) {
             dbo.collection('orders').updateOne(query, { $set: { price: body.price } }, function(err, res) {
               if (err) {
                 console.log(err);
-                db.close();
+                connection.close();
                 response.status(503).send({success: false, error: 'Service unavailable'});
                 return;
               }
@@ -68,25 +75,26 @@ app.put("/orders/:id", (request, response) => {
                 json: true,
                 body: body.price
               }, function(err, res, body) {
-                console.log(body);
                 if (err) {
                   console.log(err);
-                  db.close();
+                  connection.close();
                   response.status(503).send({success: false, error: 'Service unavailable'});
                   return;
                 }
+                console.log('ACCOUNT SERVICE: ' + res.statusCode);
+                console.log(body);
                 if (res && res.statusCode == 403 || res.statusCode == 201) {
                   dbo.collection('orders').updateOne(query, { $set: { state: 'completed' } }, function(err, res) {
                     if (err) {
                       console.log(err);
-                      db.close();
+                      connection.close();
                       response.status(503).send({success: false, error: 'Service unavailable'});
                       return;
                     }
 
                     //SUCCESSFUL TRANSACTION!!!
                     response.status(201).send({success: true});
-                    db.close();
+                    connection.close();
                   });
                 } else {
                   //NOT ENOUGH MONEY ON ACCOUNT OR ACCOUNT SERVICE UNAVAILABLE
@@ -99,14 +107,17 @@ app.put("/orders/:id", (request, response) => {
                   }, function(err, res, body) {
                     if (err) {
                       console.log(err);
+                      return;
                     }
+                    console.log('INVENTORY SERVICE: ' + res.statusCode);
+                    console.log(body);
                   });
 
                   dbo.collection('orders').deleteOne(query, function(err, db) {
                     if (err) {
                       console.log(err);
                     }
-                    db.close();
+                    connection.close();
                   });
                 }
               });
@@ -123,7 +134,7 @@ app.put("/orders/:id", (request, response) => {
               if (err) {
                 console.log(err);
               }
-              db.close();
+              connection.close();
             });
           }
         });
@@ -135,7 +146,7 @@ app.put("/orders/:id", (request, response) => {
           if (err) {
             console.log(err);
             response.status(503).send({success: false, error: 'Service unavailable'});
-            db.close();
+            connection.close();
             return;
           }
           make_order();
@@ -143,7 +154,7 @@ app.put("/orders/:id", (request, response) => {
       } else {
         if (res[0].state == 'completed') {
           response.status(403).send({success: false, error: 'Already processed'});
-          db.close();
+          connection.close();
           return;
         } else {
           make_order();
@@ -154,22 +165,22 @@ app.put("/orders/:id", (request, response) => {
 });
 
 app.get("/orders", (request, response) => {
-  MongoClient.connect(url, (err, db) => {
+  MongoClient.connect(url, (err, connection) => {
     if (err) {
       response.status(503).send({success: false, error: 'Service unavailable'});
       return;
     }
 
-    var dbo = db.db('order');
+    var dbo = connection.db('order');
     var projection = { _id: 0 };
     dbo.collection('orders').find({}, {projection: projection}).toArray(function(err, res) {
       if (err) {
         response.status(503).send({success: false, error: 'Service unavailable'});
-        db.close();
+        connection.close();
         return;
       }
       response.send({success: true, orders: res});
-      db.close();
+      connection.close();
     });
   });
 });

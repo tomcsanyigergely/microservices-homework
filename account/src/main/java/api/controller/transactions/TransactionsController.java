@@ -45,7 +45,7 @@ public class TransactionsController {
         }
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class) // rollback for checked exceptions too
     @PutMapping("/transactions/{transactionId}")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Object> createTransaction(@PathVariable String transactionId, @RequestHeader("X-USERNAME") String username, @RequestBody int amount) throws NotEnoughBalanceException, UserHasNoAccountException, AlreadyProcessedException {
@@ -69,7 +69,7 @@ public class TransactionsController {
         }
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class) // rollback for checked exceptions too
     @DeleteMapping("/transactions/{transactionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Map<String, Object> deleteTransaction(@PathVariable String transactionId) throws NotFoundException {
