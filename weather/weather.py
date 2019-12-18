@@ -27,7 +27,7 @@ def get_all_forecasts():
     else:
       return jsonify({'success': False, 'error': 'Forbidden'}), 403
 
-@app.route("/forecasts/<int:id>", methods=['GET'])
+@app.route("/forecasts/<id>", methods=['GET'])
 def get_forecast(id):
     username = request.headers.get('X-USERNAME')
     connection = create_connection()
@@ -44,7 +44,7 @@ def get_forecast(id):
     else:
       return jsonify({'success': False, 'error': 'Forbidden'}), 403
 
-@app.route("/forecasts/<int:id>", methods=['PUT'])
+@app.route("/forecasts/<id>", methods=['PUT'])
 def put_forecast(id):
     if request.is_json:
       body = request.get_json()
@@ -58,13 +58,13 @@ def put_forecast(id):
         cursor.execute("SELECT id, username, latitude, longitude, temperature, date FROM forecasts WHERE id = %s", (id,))
         row = cursor.fetchone()
         if row is not None:
-          response = {'success': False, 'error': 'Forbidden'})
+          response = {'success': False, 'error': 'Forbidden'}
           status = 403
         else:
-          account_response = requests.put("http://account:80/transactions/" + id, data={'5'})
+          account_response = requests.put("http://account:80/transactions/" + id, json='5', headers={'X-USERNAME': username})
           if account_response.status_code == 201 or account_response.status_code == 403:
             payload = {'latitude': body['latitude'], 'longitude': body['longitude'], 'days': body['days']}
-            forecast_response = requests.get("http://forecast:80/weather", data=payload)
+            forecast_response = requests.get("http://forecast:80/weather", json=payload)
             if forecast_response.status_code == 200:
               content = forecast_response.content
               insert_forecast_sql = ("INSERT INTO forecasts (id, username, latitude, longitude, temperature, date) VALUES (%s, %s, %s, %s, %s, DATE_ADD(NOW(), INTERVAL %s DAY))")

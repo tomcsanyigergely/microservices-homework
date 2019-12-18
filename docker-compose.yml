@@ -100,3 +100,4 @@ services:
       - order
       - inventory
       - account
+      - weather
