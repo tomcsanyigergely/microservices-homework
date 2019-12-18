@@ -52,6 +52,12 @@ services:
       - inventory
       - account
 
+  forecast:
+    build: forecast/
+    volumes:
+      - ./forecast:/app
+    command: [ "node", "/app/app.js" ]
+
   authdb:
     image: postgres:12.1
     environment:
