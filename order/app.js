@@ -88,7 +88,7 @@ app.put("/orders/:id", (request, response) => {
                 console.log('ACCOUNT SERVICE: ' + res.statusCode);
                 console.log(body);
                 if (res && res.statusCode == 403 || res.statusCode == 201) {
-                  dbo.collection('orders').updateOne(query, { $set: { state: 'completed', timestamp: { type: Date, default: Date.now} } }, function(err, res) {
+                  dbo.collection('orders').updateOne(query, { $set: { state: 'completed' } }, function(err, res) {
                     if (err) {
                       console.log(err);
                       connection.close();
