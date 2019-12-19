@@ -145,7 +145,7 @@ app.put("/orders/:id", (request, response) => {
       };
 
       if (res.length == 0) {
-        var order = { request_id: request_id, state: 'pending', username: username, items: items, timestamp: { type: Date, default: Date.now} };
+        var order = { request_id: request_id, state: 'pending', username: username, items: items };
         dbo.collection('orders').insertOne(order, function(err, res) {
           if (err) {
             console.log(err);
